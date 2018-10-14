@@ -194,7 +194,7 @@ def merge_dub_names(df):
 
     """Aynı MOF isiminde birden fazla değer var ise en büyük değeri alır"""
     df = df[["MOF Name", "Value", "DOI"]]
-    df_merge = df.astype(str).groupby("MOF Name").agg(";".join)#.reset_index(drop=True)
+    df_merge = df.astype(str).groupby("MOF Name").agg(";".join)
 
     for i, row in df_merge.iterrows(): # for the iteration data frame as row
 
@@ -209,14 +209,32 @@ def merge_dub_names(df):
 
     return df_merge
 
-def run_pv():
+def abtain_sa_pv(cleaned_sa, cleaned_pv):
+    """create two column have came from pv and sa data beside MOF name and DOI"""
+
+    df = pd.concat([cleaned_sa, cleaned_pv])
+    df = df.astype(str).groupby("MOF Name").agg(";".join)
+    df = df[df['Value'].str.contains(";", regex=False, case=False, na=False)] # value stununda ";"  içeren satırları getir
+
+    df = df.join(df["Value"].str.split(';', expand=True).add_prefix("Value").fillna(np.nan)) # ";" dan bölerek iki ayrı sütün oluşturur ve boşluklara null ekler
+    df = df.join(df["DOI"].str.split(';', expand=True).add_prefix("DOI").fillna(np.nan))
+    df = df.drop(columns=["Value", "DOI"]).reset_index()
+
+    labels = ["MOF Name", "Value_SA(m2/g)", "Value_PV(cm3/g)", "DOI_SA", "DOI_PV"]
+
+    df.columns = labels # remane columns of dataframe
+
+    return df#.reset_index(drop=True)
+
+
+def cleaned_pv():
     pv = clean_values_pv(clean_name_for_pv(df_data_pv))
     non_dublicates_pv = drop_duplicates(pv[0])
     merge_names_pv = merge_dub_names(non_dublicates_pv)
 
     return merge_names_pv
 
-def run_sa():
+def cleaned_sa():
     df_sa_bet = df_data_sa.loc[df_data_sa['Type'] == "BET"]
     sa = clean_values_sa(clean_name_for_sa(df_sa_bet))
     non_dublicates_sa = drop_duplicates(sa[0])
@@ -224,4 +242,6 @@ def run_sa():
 
     return merge_names_sa
 
-save_to_exel(run_pv(), "celan_double_names_merge_PV_1")
+
+
+save_to_exel(abtain_sa_pv(cleaned_sa(), cleaned_pv()), "betSA_PV_")
