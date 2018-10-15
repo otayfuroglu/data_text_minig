@@ -214,17 +214,36 @@ def abtain_sa_pv(cleaned_sa, cleaned_pv):
 
     df = pd.concat([cleaned_sa, cleaned_pv])
     df = df.astype(str).groupby("MOF Name").agg(";".join)
-    df = df[df['Value'].str.contains(";", regex=False, case=False, na=False)] # value stununda ";"  içeren satırları getir
+    df = df[df['Value'].str.contains(";", regex=False, case=False, na=False)] # value sutununda ";"  içeren satırları getir
 
     df = df.join(df["Value"].str.split(';', expand=True).add_prefix("Value").fillna(np.nan)) # ";" dan bölerek iki ayrı sütün oluşturur ve boşluklara null ekler
     df = df.join(df["DOI"].str.split(';', expand=True).add_prefix("DOI").fillna(np.nan))
-    df = df.drop(columns=["Value", "DOI"]).reset_index()
+    sa_pv = df.drop(columns=["Value", "DOI"]).reset_index()
 
     labels = ["MOF Name", "Value_SA(m2/g)", "Value_PV(cm3/g)", "DOI_SA", "DOI_PV"]
 
-    df.columns = labels # remane columns of dataframe
+    sa_pv.columns = labels # remane columns of dataframe
 
-    return df#.reset_index(drop=True)
+    return sa_pv
+
+def calc_H2_up_core(sa, pv):
+
+    sa = float(sa)  # g/m2
+    pv = float(pv) / 1000000.0  # m3/g
+    c = 0.021  # H2 g/m2 --> proportionslity canstant linking SA
+    ph2 = 11.5 * 1000  # g/m3 (77 K and 35 bar)
+
+    h2_up = "%.3f" %(c * sa + ph2 * pv)
+
+    return h2_up
+
+
+def calc_H2_up(sa_pv_data):
+
+    sa_pv_data.insert(loc=3, column="H2_UP", value=list(map(calc_H2_up_core,
+                                                            sa_pv_data["Value_SA(m2/g)"],
+                                                            sa_pv_data["Value_PV(cm3/g)"])))
+    return sa_pv_data
 
 
 def cleaned_pv():
@@ -243,5 +262,8 @@ def cleaned_sa():
     return merge_names_sa
 
 
-
-save_to_exel(abtain_sa_pv(cleaned_sa(), cleaned_pv()), "betSA_PV_")
+cleaned_sa = cleaned_sa()
+cleaned_pv = cleaned_pv()
+sa_pv_data = abtain_sa_pv(cleaned_sa, cleaned_pv)
+#print calc_H2_up(sa_pv_data)
+save_to_exel(calc_H2_up(sa_pv_data), "betSA_PV_H2_up")
