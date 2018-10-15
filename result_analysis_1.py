@@ -209,41 +209,69 @@ def merge_dub_names(df):
 
     return df_merge
 
-def abtain_sa_pv(cleaned_sa, cleaned_pv):
+
+def abtain_sa_pv_density(cleaned_sa, cleaned_pv):
     """create two column have came from pv and sa data beside MOF name and DOI"""
 
     df = pd.concat([cleaned_sa, cleaned_pv])
     df = df.astype(str).groupby("MOF Name").agg(";".join)
     df = df[df['Value'].str.contains(";", regex=False, case=False, na=False)] # value sutununda ";"  içeren satırları getir
 
-    df = df.join(df["Value"].str.split(';', expand=True).add_prefix("Value").fillna(np.nan)) # ";" dan bölerek iki ayrı sütün oluşturur ve boşluklara null ekler
+    df = df.join(df["Value"].str.split(';', expand=True).add_prefix("Value").fillna(np.nan)) # her bir cell'i ";" dan bölerek iki ayrı sütün oluşturur ve boşluklara null ekler
     df = df.join(df["DOI"].str.split(';', expand=True).add_prefix("DOI").fillna(np.nan))
+
     sa_pv = df.drop(columns=["Value", "DOI"]).reset_index()
 
     labels = ["MOF Name", "Value_SA(m2/g)", "Value_PV(cm3/g)", "DOI_SA", "DOI_PV"]
-
     sa_pv.columns = labels # remane columns of dataframe
+
+    # DENSITY eklendi!!
+    sa_pv.insert(loc=1, column="Density", value=map(cacl_density, sa_pv["DOI_SA"]))
 
     return sa_pv
 
-def calc_H2_up_core(sa, pv):
+def cacl_density(doi):
+    # ref_code_dois = pd.read_csv("structure_doi_CoRE_MOFsV2.0.csv")
+    # ref_codes = list(ref_code_dois.loc[ref_code_dois["DOI"] == doi]["REFCODE"])
+    #
+    # import ccdc as cc
+    # csd_crystal_reader = cc.CrystalReader('CSD')
+    #
+    # for ref_code in ref_codes:
+    #     crystal = csd_crystal_reader.crystal(ref_code)
+    #     denisty = crystal.calculated_density
+    #return denisty
+
+    return 0.2
+
+
+def calc_H2_up_core(sa, pv, density):
+
 
     sa = float(sa)  # g/m2
     pv = float(pv) / 1000000.0  # m3/g
     c = 0.021  # H2 g/m2 --> proportionslity canstant linking SA
     ph2 = 11.5 * 1000  # g/m3 (77 K and 35 bar)
 
-    h2_up = "%.3f" %(c * sa + ph2 * pv)
+    h2_up_per_gram = "%.3f" %(c * sa + ph2 * pv)
+    h2_up_per_volume = "%.3f" % ((c * sa + ph2 * pv) * density)
 
-    return h2_up
+    return h2_up_per_gram, h2_up_per_volume
 
 
-def calc_H2_up(sa_pv_data):
+def calc_H2_up(sa_pv_dens_data):
 
-    sa_pv_data.insert(loc=3, column="H2_UP", value=list(map(calc_H2_up_core,
-                                                            sa_pv_data["Value_SA(m2/g)"],
-                                                            sa_pv_data["Value_PV(cm3/g)"])))
-    return sa_pv_data
+    sa_pv_dens_data.insert(loc=4, column="H2_UP (w/W)", value=[value[0] for value in (map(calc_H2_up_core,
+                                                                                          sa_pv_dens_data["Value_SA(m2/g)"],
+                                                                                          sa_pv_dens_data["Value_PV(cm3/g)"],
+                                                                                          sa_pv_dens_data["Density"]))])
+
+    sa_pv_dens_data.insert(loc=5, column="H2_UP (w/L)", value=[value[1] for value in (map(calc_H2_up_core,
+                                                                                          sa_pv_dens_data["Value_SA(m2/g)"],
+                                                                                          sa_pv_dens_data["Value_PV(cm3/g)"],
+                                                                                          sa_pv_dens_data["Density"]))])
+
+    return sa_pv_dens_data
 
 
 def cleaned_pv():
@@ -264,6 +292,7 @@ def cleaned_sa():
 
 cleaned_sa = cleaned_sa()
 cleaned_pv = cleaned_pv()
-sa_pv_data = abtain_sa_pv(cleaned_sa, cleaned_pv)
-#print calc_H2_up(sa_pv_data)
-save_to_exel(calc_H2_up(sa_pv_data), "betSA_PV_H2_up")
+sa_pv_dens_data = abtain_sa_pv_density(cleaned_sa, cleaned_pv)
+#calc_H2_up(sa_pv_data)
+
+save_to_exel(calc_H2_up(sa_pv_dens_data), "betSA_PV_H2_up_2")
