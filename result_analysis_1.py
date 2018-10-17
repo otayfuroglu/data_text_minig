@@ -51,6 +51,7 @@ def clean_name_for_sa(df_data_sa):
             total_non_clean_names_sa = total_non_clean_names_sa.append(clean_name_mof_sa.loc[[i]],
                                                      ignore_index=True)
             clean_name_mof_sa = clean_name_mof_sa.drop(i)
+
         i += 1
 
 
@@ -246,7 +247,7 @@ def calc_H2_up(sa_pv_dens_data):
                                                                         sa_pv_dens_data["Value_SA(m2/g)"],
                                                                         sa_pv_dens_data["Value_PV(cm3/g)"])))
 
-    return sa_pv_dens_data
+    return sa_pv_dens_data.sort_values("H2_UP (w/W %)", ascending=False)
 
 
 def cleaned_pv():
@@ -254,7 +255,8 @@ def cleaned_pv():
     non_dublicates_pv = drop_duplicates(pv[0])
     merge_names_pv = merge_dub_names(non_dublicates_pv)
 
-    return merge_names_pv
+    sort_merge_names_pv = merge_names_pv.sort_values("Value", ascending=False)
+    return sort_merge_names_pv.reset_index()
 
 def cleaned_sa():
     df_sa_bet = df_data_sa.loc[df_data_sa['Type'] == "BET"]
@@ -262,12 +264,15 @@ def cleaned_sa():
     non_dublicates_sa = drop_duplicates(sa[0])
     merge_names_sa = merge_dub_names(non_dublicates_sa)
 
-    return merge_names_sa
+    sort_merge_names_sa = merge_names_sa.sort_values("Value", ascending=False)
+    return sort_merge_names_sa.reset_index()
 
 
-cleaned_sa = cleaned_sa()
-cleaned_pv = cleaned_pv()
-sa_pv_dens_data = abtain_sa_pv(cleaned_sa, cleaned_pv)
+#cleaned_sa = cleaned_sa()
+#cleaned_pv = cleaned_pv()
+#sa_pv_dens_data = abtain_sa_pv(cleaned_sa, cleaned_pv)
 #calc_H2_up(sa_pv_data)
 
-save_to_exel(calc_H2_up(sa_pv_dens_data), "betSA_PV_H2_up_3")
+#save_to_exel(calc_H2_up(sa_pv_dens_data), "sort_betSA_PV_H2_up_1")
+
+save_to_exel(cleaned_pv(), "sort_celan_double_names_merge_PV_2")
