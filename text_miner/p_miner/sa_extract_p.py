@@ -302,10 +302,13 @@ def sa_core(html_doc, temp_dir):
                 if bold_index != -1 and bold_index != 0 and bold_index != len(bold_sentence):
                     if bold_sentence[bold_index - 1].isdigit() or bold_sentence[bold_index - 1].isalpha():
                         pass_crit += 1
-                    if bold_index + len(i.string) <= len(bold_sentence) \
-                            and bold_sentence[bold_index + len(i.string)].isdigit() \
-                            or bold_sentence[bold_index + len(i.string)].isalpha():
-                        pass_crit += 1
+                    try:
+                        if bold_index + len(i.string) <= len(bold_sentence) \
+                                and bold_sentence[bold_index + len(i.string)].isdigit() \
+                                or bold_sentence[bold_index + len(i.string)].isalpha():
+                            pass_crit += 1
+                    except:
+                        pass
                 if pass_crit == 2:
                     start_pos = bold_index + 1
                 else:
@@ -639,8 +642,8 @@ def sa_core(html_doc, temp_dir):
                                 if MOF_column == 1:
                                     Total_DATA.append([data[j + head_row_num][0][0], surf_column[i][1],
                                                        data[j + head_row_num][surf_column[i][0]][0], 'm2/g'])
-                                    print (data[j + head_row_num][0][0], "|", surf_column[i][1], "|",
-                                           data[j + head_row_num][surf_column[i][0]][0], "|", 'm2/g')
+                                    #print (data[j + head_row_num][0][0], "|", surf_column[i][1], "|",
+                                    #       data[j + head_row_num][surf_column[i][0]][0], "|", 'm2/g')
                                 elif table.find("caption") != None:
                                     caption = table.find("caption")
                                     caption_text = caption.get_text().split(' ')
@@ -786,7 +789,7 @@ def sa_core(html_doc, temp_dir):
                             '|from\s?\d+\s?to\s?\d+\s?|from\s?\d+|over\s?\d+|\d+\s?~\s?\d+'
                             '|\d+\s?–\s?\d+|as\s?high\s?as\s?\d+|∼\d+|[<>]\d+|\s?exceeding\s?\d+', re.I)
 
-    print ('\n<Surface area data in article>\n')
+    #print ('\n<Surface area data in article>\n')
     for i in range(len(sentences)):
         data_sentence = unit.findall(sentences[i])
 
@@ -1105,27 +1108,27 @@ def sa_core(html_doc, temp_dir):
                 for k in range(len(value_list_total)):
                     if len(Type) == 0 and strange == 0:
                         Total_DATA.append([MOF_list[k], "*No_surface_type*", value_list_total[k], unittext])
-                        print  # (MOF_list[k],"|","*No_surface_type*","|",value_list_total[k],"|",unittext)
+                        #print (MOF_list[k],"|","*No_surface_type*","|",value_list_total[k],"|",unittext)
                     if len(Type) == 1 and strange == 0:
                         Total_DATA.append([MOF_list[k], Type[0], value_list_total[k], unittext])
-                        print  # (MOF_list[k],"|",Type[0],"|",value_list_total[k],"|",unittext)
+                        #print (MOF_list[k],"|",Type[0],"|",value_list_total[k],"|",unittext)
                     if len(Type) == 2 and strange == 0:
                         end = int(len(value_list_total) / 2)
                         if BBLL_type == 0:
                             a, b = divmod(k, 2)
                             Total_DATA.append([MOF_list[a], Type[b], value_list_total[k], unittext])
-                            print  # (MOF_list[a],"|", Type[b],"|",value_list_total[k],"|",unittext)
+                            #print (MOF_list[a],"|", Type[b],"|",value_list_total[k],"|",unittext)
                         elif BBLL == 'BBLL':
                             if k < end:
                                 Total_DATA.append([MOF_list[k], Type[0], value_list_total[k], unittext])
-                                print  # (MOF_list[k],"|",Type[0],"|",value_list_total[k],"|",unittext)
+                                #print (MOF_list[k],"|",Type[0],"|",value_list_total[k],"|",unittext)
                             else:
                                 Total_DATA.append([MOF_list[k - end], Type[1], value_list_total[k], unittext])
-                                print  # (MOF_list[k - end],"|",Type[1],"|",value_list_total[k],"|",unittext)
+                                #print (MOF_list[k - end],"|",Type[1],"|",value_list_total[k],"|",unittext)
                         elif BBLL == 'BLBL':
                             a, b = divmod(k, 2)
                             Total_DATA.append([MOF_list[a], Type[b], value_list_total[k], unittext])
-                            print  # (MOF_list[a],"|",Type[b],"|",value_list_total[k],"|",unittext)
+                            #print (MOF_list[a],"|",Type[b],"|",value_list_total[k],"|",unittext)
             elif special_case == 1 and strange == 0:
                 if BET_count == len(MOF_list):
                     for j in range(Lang_count):
@@ -1137,7 +1140,7 @@ def sa_core(html_doc, temp_dir):
                             MOF_list.insert(Lang_index[j], text)
                     for k in range(len(value_list_total)):
                         Total_DATA.append([MOF_list[k], Type_total[k], value_list_total[k], unittext])
-                        print  # (MOF_list[k],"|",Type_total[k],"|",value_list_total[k],"|",unittext)
+                        #print (MOF_list[k],"|",Type_total[k],"|",value_list_total[k],"|",unittext)
                 else:
                     for j in range(BET_count):
                         if BET_index[j] == 0:
@@ -1148,6 +1151,6 @@ def sa_core(html_doc, temp_dir):
                             MOF_list.insert(BET_index[j], text)
                     for k in range(len(value_list_total)):
                         Total_DATA.append([MOF_list[k], Type_total[k], value_list_total[k], unittext])
-                        print  # (MOF_list[k],"|",Type_total[k],"|",value_list_total[k],"|",unittext)
+                        #print (MOF_list[k],"|",Type_total[k],"|",value_list_total[k],"|",unittext)
     return Total_DATA #, MOF_list, value_list_total
 
