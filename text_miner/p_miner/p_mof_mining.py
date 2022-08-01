@@ -1,8 +1,9 @@
 # -*- coding:utf-8 -*-
-
+from __future__ import print_function # her zaman en başta olmalı
 import pandas as pd
-import os
+import os, sys
 import re
+import shutil
 
 from multiprocessing import Pool
 from itertools import product
@@ -76,21 +77,16 @@ def pdf2html_1(file_name, html_dir):
         os.system("mv %s/%s.txt %s/%s.html" % (html_dir, file_name, html_dir, file_name))
         print ("Çevrildi :)")
 
-def doi_match(all_doi_path, file_name, i):
-    """doilerin tekrar elde edilmesi için doiler ve file name leri eşleştiriyor
-	ve o file name ait doi yi buluyor"""
-    dois = pd.read_csv("%s/all_mof_dois_%s.csv" % (all_doi_path, i))["DOI"]
-    base = file_name.replace(".html", "")
-
-    for doi in dois:
-        if base == doi.replace("/", "").replace(".", ""):
-            return doi
-
-
-def paral_by_fname(file_name, html_dir, i):
+def paral_by_fname(file_name, html_dir):
     """xxxxxxxxxxxxxx"""
 
-    print (file_name)
+    #!!!Duzelt!!!
+    puplisher = html_dir.split("/")[-1]
+    file_names = [f for f in os.listdir(html_dir) if ".html" in f]
+    i = file_names.index(file_name)
+    print ("%s taranıyor...  %.2f tamamlandı." %(puplisher, 100*i/len(file_names)), end="\r")
+    sys.stdout.flush()
+    #!!!!!
 
     pid = os.getpid()
     work_dir = os.getcwd()
@@ -100,18 +96,12 @@ def paral_by_fname(file_name, html_dir, i):
         os.mkdir("temp_%s" %pid)
 
     temp_dir = "%s/temp_%s" %(work_dir, pid)
-    all_doi_path = "/home/omert/Desktop/mof_text_minig/get_dois/separated_dois"
+
+    doi = file_name.replace("_s_", "/").replace("_n_", ".") \
+            .replace("_p_", "(").replace("_tp_", ")").replace("_ot_", "-").replace(".html", "")
 
     try:
-        nw_doi = doi_match(all_doi_path, file_name, i)  # ilk 20,000 lik data için doilerin tekrar elde edilmesi için düzeltme yaptık
-        if nw_doi:
-            doi = nw_doi
-        else:
-            doi = file_name.replace(".html", "")
-
         url = "http://dx.doi.org/" + str(doi)
-
-
 
         try:
             replace("%s/%s" % (html_dir, file_name), ">\d+\w*[</\w+>]*</a>", "></\w+></a>", "%s/temp.html" % temp_dir); \
@@ -127,10 +117,9 @@ def paral_by_fname(file_name, html_dir, i):
             fl2.close()
 
             pdf2html_1(file_name, html_dir)  # pdf ten html fromatına çevirdik
-            """NOT!!! bu şekilde text formatı üzerinden .html formatına çeverilen dosyalar üzerinde 
+            """NOT!!! bu şekilde text formatı üzerinden .html formatına çeverilen dosyalar üzerinde
             sa_core ve pv_core fonk.ları verimli sonuç  alamıyor !!!. orjinal html dosyaların elde edilmesi gerekmekte !!!
-            
-            Ayrıca yeri gelmişken, elsevier den çekilen dosyalarda .text formatında olduğundan aynı verimsizlik 
+            Ayrıca yeri gelmişken, elsevier den çekilen dosyalarda .text formatında olduğundan ayn verimsizlik
             bu dosyalar üzerinde de olabilir"""
 
             replace("%s/%s" % (html_dir, file_name), ">\d+\w*[</\w+>]*</a>", "></\w+></a>", "%s/temp.html" % temp_dir); \
@@ -169,59 +158,53 @@ def paral_by_fname(file_name, html_dir, i):
 
     return data_sa, data_pv
 
-
-def run_paral1(n_proc):
+def run_paral(n_proc):
     """xxxxxxx"""
 
     all_data_sa = []
     all_data_pv = []
 
-    path = "/home/omert/Downloads/mof_lib"
+    path = "/home/modellab/workspace/omer/mof_text_minig/in_output/get_lib/all_files"
 
-    directorys = [item for item in os.listdir(path) if "5000_" in item and not "." in item]
+    lib_dirs = [item for item in os.listdir(path) if not "." in item]
+    done_publishers = [f.replace("_SA_extract.csv", "") for f in os.listdir(os.getcwd()) if "SA_extract.csv" in f]
 
-    for directory in directorys:
-        # data yı 5000 lik dosyalara ayırdığımız için burda 5000 lik döngüler oluşturduk
-        data_5000_sa = pd.DataFrame()
-        data_5000_pv = pd.DataFrame()
+    for lib_dir in lib_dirs:
+        html_dir = ["%s/%s" % (path, lib_dir)] #starmap 'te tek bir öğe olması için list yaptık
+        file_names = [f for f in os.listdir(html_dir[0]) if ".html" in f]
 
-        lib_dirs = [item for item in os.listdir("%s/%s" % (path, directory)) if not "." in item]
-        i = directory.replace("_5000_files", "")
+        lib_dir_data_sa = pd.DataFrame()
+        lib_dir_data_pv = pd.DataFrame()
 
-        for lib_dir in lib_dirs:
+        if len(file_names) == 0:
+            continue
+        if lib_dir in done_publishers:
+            continue
+        with Pool(processes=n_proc) as pool:
+            results = pool.starmap(paral_by_fname, product(file_names, html_dir))
+        pool.close()
 
-            html_dir = ["%s/%s/%s" % (path, directory, lib_dir)] #starmap 'te tek bir öğe olsı için list yaptık
-            file_names = [f for f in os.listdir(html_dir[0]) if ".html" in f]
+        for result in results:
 
-            if len(file_names) != 0:
-                with Pool(processes=n_proc) as pool:
-                    results = pool.starmap(paral_by_fname, product(file_names, html_dir, i))
-                pool.close()
+            lib_dir_data_sa = lib_dir_data_sa.append(result[0])
+            lib_dir_data_pv = lib_dir_data_pv.append(result[1])
 
-                for result in results:
+        lib_dir_data_sa.to_csv("%s_SA_extract.csv" %lib_dir)
+        lib_dir_data_pv.to_csv("%s_PV_extract.csv" %lib_dir)
 
-                    data_5000_sa = data_5000_sa.append(result[0])
-                    data_5000_pv = data_5000_pv.append(result[1])
+        all_data_sa.append(lib_dir_data_sa)
+        all_data_pv.append(lib_dir_data_pv)
 
-        keyword = "%s_5000" % i
-        save_to_exel(data_5000_sa, file_name="%s_SA_extract_paral" % keyword)
-        save_to_exel(data_5000_pv, file_name="%s_PV_extract_paral" % keyword)
-
-    #bütün datayı tek frame topluyoruz
-        all_data_sa.append(data_5000_sa)
-        all_data_pv.append(data_5000_pv)
     all_data_sa = pd.concat(all_data_sa)
     all_data_pv = pd.concat(all_data_pv)
 
-    save_to_exel(all_data_sa, file_name="all_MOF_SA_extract_paral")
-    save_to_exel(all_data_pv, file_name="all_MOF_PV_extract_paral")
+    all_data_sa.to_csv("all_SA_extract.csv")
+    all_data_pv.to_csv("all_PV_extract.csv")
 
-    import shutil
     work_dir = os.getcwd()
-    for item in os.listdir(work_dir):
+    for item in os.listdir(os.getcwd()):
         if "temp_" in item:
             shutil.rmtree(item)
 
-
-run_paral1(n_proc=4)
+run_paral(n_proc=4)
 
