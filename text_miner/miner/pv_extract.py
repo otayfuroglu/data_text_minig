@@ -216,7 +216,7 @@ def pv_core(html_doc):
 	#print (MOF_in_Paper)
 	# Close file and reopen it to solve BOLD problem
 	html_doc.close()
-	html_doc = open("%s/temp2.html", encoding = "UTF-8")
+	html_doc = open("temp2.html", encoding = "UTF-8")
 	#html_doc = open("ref131.html", encoding = "UTF-8")
 
 	# eliminating HTML tags - Reference delete
@@ -291,8 +291,11 @@ def pv_core(html_doc):
 				if bold_index != -1 and bold_index != 0 and bold_index != len(bold_sentence):
 					if bold_sentence[bold_index-1].isdigit() or bold_sentence[bold_index-1].isalpha():
 						pass_crit += 1
-					if bold_index + len(i.string) <= len(bold_sentence) and bold_sentence[bold_index+len(i.string)].isdigit() or bold_sentence[bold_index+len(i.string)].isalpha():
-						pass_crit += 1
+					try: #omert
+						if bold_index + len(i.string) <= len(bold_sentence) and bold_sentence[bold_index+len(i.string)].isdigit() or bold_sentence[bold_index+len(i.string)].isalpha():
+							pass_crit += 1
+					except:#omert
+						pass#omert:
 				if pass_crit == 2:
 					start_pos = bold_index + 1
 				else:
@@ -634,7 +637,7 @@ def pv_core(html_doc):
 											MOF_data_in_MOFcol = 1
 								if MOF_column == 1:
 									Total_DATA.append([data[j+head_row_num][0][0],surf_column[i][1],data[j+head_row_num][surf_column[i][0]][0],'cm3/g'])
-									print (data[j+head_row_num][0][0],"|",surf_column[i][1],"|",data[j+head_row_num][surf_column[i][0]][0],"|",'cm3/g')
+									#print (data[j+head_row_num][0][0],"|",surf_column[i][1],"|",data[j+head_row_num][surf_column[i][0]][0],"|",'cm3/g')
 								elif table.find("caption") != None:
 									caption = table.find("caption")
 									caption_text = caption.get_text().split(' ')
@@ -645,13 +648,13 @@ def pv_core(html_doc):
 									MOF_name = MOF_name+'--'+data[head_row_num - 1][0][0]+':'+data[head_row_num+j][0][0]
 									## state word need to be added
 									Total_DATA.append([MOF_name, surf_column[i][1],data[j+head_row_num][surf_column[i][0]][0],'cm3/g'])
-									print (MOF_name,"|", surf_column[i][1],"|",data[j+head_row_num][surf_column[i][0]][0],"|",'cm3/g')
+									#print (MOF_name,"|", surf_column[i][1],"|",data[j+head_row_num][surf_column[i][0]][0],"|",'cm3/g')
 								elif MOF_data_in_MOFcol == 1:
 									Total_DATA.append([MOF_name, surf_column[i][1],data[j+head_row_num][surf_column[i][0]][0],'cm3/g'])
-									print (MOF_name,"|", surf_column[i][1],"|",data[j+head_row_num][surf_column[i][0]][0],"|",'cm3/g')
+									#print (MOF_name,"|", surf_column[i][1],"|",data[j+head_row_num][surf_column[i][0]][0],"|",'cm3/g')
 								else:
 									Total_DATA.append(['*NO_MOF_data*', surf_column[i][1],data[j+head_row_num][surf_column[i][0]][0],'cm3/g'])
-									print ('*NO_MOF_data*',"|", surf_column[i][1],"|",data[j+head_row_num][surf_column[i][0]][0],"|",'cm3/g')
+									#print ('*NO_MOF_data*',"|", surf_column[i][1],"|",data[j+head_row_num][surf_column[i][0]][0],"|",'cm3/g')
 
 
 					elif surf_column[i][2] == 'left':
@@ -673,7 +676,7 @@ def pv_core(html_doc):
 										if MOF_name.find(data[k][j+1][0]) == -1:
 											MOF_name += data[k][j+1][0]+' '
 									Total_DATA.append([MOF_name, surf_column[i][1], data[surf_column[i][0]][j+1][0], 'cm3/g'])
-									print (MOF_name,"|", surf_column[i][1],"|", data[surf_column[i][0]][j+1][0],"|", 'cm3/g')
+									#print (MOF_name,"|", surf_column[i][1],"|", data[surf_column[i][0]][j+1][0],"|", 'cm3/g')
 
 								elif table.find("caption") != None:
 									caption = table.find("caption")
@@ -684,13 +687,13 @@ def pv_core(html_doc):
 												MOF_name = caption_text[l];
 									## state word need to be added
 									Total_DATA.append([MOF_name, surf_column[i][1],data[surf_column[i][0]][j+1][0],'cm3/g'])
-									print (MOF_name,"|", surf_column[i][1],"|",data[surf_column[i][0]][j+1][0],"|",'cm3/g')
+									#print (MOF_name,"|", surf_column[i][1],"|",data[surf_column[i][0]][j+1][0],"|",'cm3/g')
 								elif MOF_data_in_MOFcol == 1:
 									Total_DATA.append([MOF_name, surf_column[i][1],data[surf_column[i][0]][j+1][0],'cm3/g'])
-									print (MOF_name,"|", surf_column[i][1],"|",data[surf_column[i][0]][j+1][0],"|",'cm3/g')
+									#print (MOF_name,"|", surf_column[i][1],"|",data[surf_column[i][0]][j+1][0],"|",'cm3/g')
 								else:
 									Total_DATA.append(['*NO_MOF_data*', surf_column[i][1], data[surf_column[i][0]][j+1][0], 'cm3/g'])
-									print ('*NO_MOF_data*',"|", surf_column[i][1],"|", data[surf_column[i][0]][j+1][0],"|", 'cm3/g')
+									#print ('*NO_MOF_data*',"|", surf_column[i][1],"|", data[surf_column[i][0]][j+1][0],"|", 'cm3/g')
 
 
 
@@ -775,7 +778,7 @@ def pv_core(html_doc):
 	unit = re.compile('cm3\s?/\s?g|cm3\s?\W?g\s?[−-]1|/\s?g\W?cm\s?[−-]3|mL\s?/\W?g\s?|mL\s?\W?g\s?[−-]1|cm3\W?cm\s?[−-]3|cm3\s?/\W?cm3\s?') # cm3/g criteria
 	range_prob = re.compile('\s?range\s?[-]?\s?of\s\d+\s?\W?\s?\d+|\s?excess\s?of\s?\d+|from\s?\d+\s?to\s?\d+\s?|from\s?\d+|over\s?\d+|\d+\s?~\s?\d+|\d+\s?–\s?\d+|as\s?high\s?as\s?\d+|∼\d+|[<>]\d+|\s?exceeding\s?\d+|\s?higher\s?than\s?\d+|\s?larger\s?than\s?\d+|theoretical\s?value\s?of\s?\d+', re.I)
 
-	print ('\n<Pore volume data in article>\n')
+	#print ('\n<Pore volume data in article>\n')
 	for i in range(len(sentences)):
 		data_sentence = unit.findall(sentences[i])
 		#if data_sentence != []:
@@ -971,7 +974,7 @@ def pv_core(html_doc):
 						BBLL_type = 0
 
 					else:
-						print ("Matching error!! even number of value needed")
+						#print ("Matching error!! even number of value needed")
 						MOF_name_counter = round(len(value_list_total)/2)
 						strange = 1
 				else:
@@ -1035,7 +1038,7 @@ def pv_core(html_doc):
 				for k in range(len(value_list_total)):
 					if len(Type) == 1 and strange == 0:
 						Total_DATA.append([MOF_list[k],Type[0],value_list_total[k],unittext])
-						print (MOF_list[k],"|",Type[0],"|",value_list_total[k],"|",unittext)
+						#print (MOF_list[k],"|",Type[0],"|",value_list_total[k],"|",unittext)
 			elif special_case == 1 and strange == 0:
 				if BET_count == len(MOF_list):
 					for j in range(Lang_count):
@@ -1047,7 +1050,7 @@ def pv_core(html_doc):
 							MOF_list.insert(Lang_index[j],text)
 					for k in range(len(value_list_total)):
 						Total_DATA.append([MOF_list[k],Type_total[k],value_list_total[k],unittext])
-						print (MOF_list[k],"|",Type_total[k],"|",value_list_total[k],"|",unittext)
+						#print (MOF_list[k],"|",Type_total[k],"|",value_list_total[k],"|",unittext)
 				else:
 					for j in range(BET_count):
 						if BET_index[j] == 0:
@@ -1058,7 +1061,7 @@ def pv_core(html_doc):
 							MOF_list.insert(BET_index[j],text)
 					for k in range(len(value_list_total)):
 						Total_DATA.append([MOF_list[k],Type_total[k],value_list_total[k],unittext])
-						print (MOF_list[k],"|",Type_total[k],"|",value_list_total[k],"|",unittext)
+						#print (MOF_list[k],"|",Type_total[k],"|",value_list_total[k],"|",unittext)
 
 	return Total_DATA
 
