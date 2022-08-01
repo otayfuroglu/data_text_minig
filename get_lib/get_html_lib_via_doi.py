@@ -86,9 +86,9 @@ def save_to_exel(df, file_name):
     df.to_excel(writer, sheet_name='Sheet1')
     writer.save()
 
-def check_saved_file(doi, saved_files_path):
+def check_saved_file(doi, saved_files_dir):
     """xxxxxx"""
-    for path, subdirs, files in os.walk(saved_files_path):  # iç içe klasörledeki bütün dosyaları listeler
+    for path, subdirs, files in os.walk(saved_files_dir):  # iç içe klasörledeki bütün dosyaları listeler
         for saved_file_name in files:
             saved_file_doi = saved_file_name.replace("_s_", "/").replace("_n_", ".") \
                 .replace("_p_", "(").replace("_tp_", ")").replace(
@@ -109,8 +109,9 @@ def dois_match(doi_1, dois):
 def run_get_html_lib():
     """xxxxx"""
 
-    doi_source_file = "/home/modellab/workspace/omer/mof_text_minig/in_output/get_lib/all_non_download_doi_catagories_fromDOIs_1.csv"
-    saved_files_path = "/home/modellab/workspace/omer/mof_text_minig/in_output/get_lib/"
+    BASE_DIR = "/home/omert/Desktop/data_text_minig/"
+    doi_source_file = f"{BASE_DIR}/works/all_non_download_doi_catagories_fromDOIs_1.csv"
+    saved_files_dir = f"{BASE_DIR}/works/html_lib"
     all_doi_categories = pd.read_csv(doi_source_file, low_memory=False)
 
     acs_dois = all_doi_categories["pubs.acs"].dropna().to_list()
@@ -119,20 +120,20 @@ def run_get_html_lib():
     wiley_dois = all_doi_categories["wiley"].dropna().to_list()
     science_dois = all_doi_categories["science"].dropna().to_list()
     pnas_dois = all_doi_categories["pnas."].dropna().to_list()
-    tandfonline_dois = all_doi_categories["tandfonline"f].dropna().to_list()
+    tandfonline_dois = all_doi_categories["tandfonline"].dropna().to_list()
     springer_dois = all_doi_categories["springer"].dropna().to_list()
     others_dois = all_doi_categories["others"].dropna().to_list()
     publisher_list = [acs_dois, rsc_dois, elsevier_dois, wiley_dois,
                       others_dois, science_dois, pnas_dois, tandfonline_dois, springer_dois]
     # workdir = os.getcwd()
-    output_dir = "/home/modellab/workspace/omer/mof_text_minig/in_output/get_lib"
+    output_dir = f"{BASE_DIR}/works/html_lib"
 
     try:
-        os.mkdir("%s/works" % output_dir)
+        os.mkdir(output_dir)
     except:
         print("Bütün klasorler önceden oluşturulmuş!")
 
-    main_dir = "%s/works" % output_dir
+    main_dir = output_dir
     acs_dir = "%s/acs_lib" % main_dir
     rsc_dir = "%s/rsc_lib" % main_dir
     elsevier_dir = "%s/elsevier_lib" % main_dir
@@ -154,7 +155,7 @@ def run_get_html_lib():
     except:
         print("Bütün klasorler önceden oluşturulmuş!")
 
-    couldnt_get_dois = open("%s/couldnt_get_dois_1.csv" %output_dir, "w")
+    couldnt_get_dois = open("%s/couldnt_get_dois.csv" %output_dir, "w")
     couldnt_get_dois.write("DOI\n")
     couldnt_get_dois.close()
     list_couldnt_get_dois = pd.read_csv("%s/couldnt_get_dois.csv" %output_dir)["DOI"].to_list()
@@ -178,7 +179,7 @@ def run_get_html_lib():
 
         doi = publisher_list[ind].pop()
 
-        if check_saved_file(doi, saved_files_path):
+        if check_saved_file(doi, saved_files_dir):
             continue
         if dois_match(doi, list_couldnt_get_dois):
             print("Doi match !!!")
@@ -186,7 +187,7 @@ def run_get_html_lib():
         try:
             url = get_link(doi)
         except:
-            couldnt_get_dois = open("%s/couldnt_get_dois_1.csv" %output_dir, "a")
+            couldnt_get_dois = open("%s/couldnt_get_dois.csv" %output_dir, "a")
             couldnt_get_dois.write("%s\n" %doi)
             couldnt_get_dois.close()
             print("Couldn't get link, May be your Pc is offline or DOI is wrong !!!")
@@ -196,10 +197,18 @@ def run_get_html_lib():
             #print(url)
             #print("%s yayın evinden, %d. DOI 'ye ait yayın indiriliyor ..." %(all_doi_categories.columns[ind+1],
             #                                                                    counter), end="\r")
-            print("%s yayın evinden, %d. DOI 'ye ait yayın indiriliyor ..." %(["acs_dois", "rsc_dois", "elsevier_dois",
-                                                                                 "wiley_dois", "others_dois", "science_dois",
-                                                                                 "pnas_dois", "tandfonline_dois", "springer_dois"][ind], counter), end="\r")
+            print("%s yayın evinden, %d. DOI 'ye ait yayın indiriliyor ..." %([
+                "acs_dois",
+                "rsc_dois",
+                "elsevier_dois",
+                "wiley_dois",
+                "others_dois",
+                "science_dois",
+                "pnas_dois",
+                "tandfonline_dois",
+                "springer_dois"][ind], counter), end="\r")
             sys.stdout.flush()
+
             counter += 1
             #os.system("find %s/%s_files -type f | wc -l" % (output_dir, "1111")) + 1
 
@@ -208,6 +217,7 @@ def run_get_html_lib():
                 "-", "_ot_")
             try:
                 if "pubs.acs" in url:
+                    #  continue
                     url = url.replace("http", "https").replace("pdf", "full")
                     html_dir = acs_dir
                     try:
@@ -248,7 +258,7 @@ def run_get_html_lib():
             except:
                 print("%s icin html formatında kayıt yapılamadı" % file_name)
 
-            sleep_time = np.random.uniform(7, 19)
+            sleep_time = np.random.uniform(13, 39)
             time.sleep(sleep_time)
 
 run_get_html_lib()
