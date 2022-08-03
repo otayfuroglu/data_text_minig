@@ -14,21 +14,25 @@ from selenium import webdriver
 
 import os, sys
 import time
-from multiprocessing import Pool
+#  from multiprocessing import Pool
 
 proxies = {'http': 'http://www.someproxy.com:3128'}
 urllib.request.ProxyHandler(proxies)
+
+session = HTMLSession()
 
 # Ignore SSL certificate errors
 ctx = ssl.create_default_context()
 ctx.check_hostname = False
 ctx.verify_mode = ssl.CERT_NONE
 
+
 def get_doi_from_csv(source_file):
     """to use file of csv, return list of doi"""
     df = pd.read_csv(source_file, low_memory=False)
     dois = df["DOI"].to_list()
     return dois
+
 
 def get_link(doi):
     # find to link of pdf file via DOI number from web
@@ -39,22 +43,42 @@ def get_link(doi):
     # r = opener.open('http://dx.doi.org/10.1021/cg400096e')
     r = opener.open("http://dx.doi.org/" + str(doi))
 
-    #print (r.info()["Link"])
-    link = r.info()["Link"].split(";")[1]
+    #  for link in r.info()["Link"].split(";"):
+    #      if "http://" in link and\
+    links =  [link[link.index("<") + 1:-1]
+              for link in r.info()["Link"].split(";")
+              if "http://" in link and ("html" in link or "xml" in link)]
+    url = [link for link in links if "html" in link]
+    if len(url) == 1:
+        return url[0], "html"
+    else:
+        url = [link for link in links if "xml" in link]
+        if len(url) == 1:
+            return url[0], "xml"
+        else:
+            url = [link for link in links if "pdf" in link]
+            if len(url) == 1:
+                return url[0], "pdf"
 
-    url = link[link.index("<") + 1:-1]
+            else:
+                link = r.info()["Link"].split(";")[1]
+                return link[link.index("<") + 1:-1], "html"
+
     # print (url)
-    return url
-#get_link("10.1002/adfm.201504312")
+    #  return url
+
+#  print(get_link("10.3390/scipharm86010009"))
+
 
 def save_html(url, html_dir, file_name):
     # Basic http file downloading from net and saving to disk in python
     save_html = urllib.request.URLopener()
     save_html.retrieve(url, "%s/%s.html" % (html_dir, file_name))
 
-def save_html_1(url, html_dir, file_name):
+
+def save_html_1(url, html_dir, file_name, file_format):
     r = requests.get(url, stream=True)
-    with open("%s/%s.html" % (html_dir, file_name), "wb") as html_f:
+    with open("%s/%s.%s" % (html_dir, file_name, file_format), "wb") as html_f:
         for chunk in r.iter_content(chunk_size=1024):
 
             # writing one chunk at a time to html file
@@ -62,29 +86,46 @@ def save_html_1(url, html_dir, file_name):
                 html_f.write(chunk)
     html_f.close()
 
-def save_html_2(url, html_dir, file_name):
+
+def save_html_wiley(doi, html_dir, file_name, file_format):
+    headers = {
+        "Wiley-TDM-Client-Token":"7979990b-23e2-4636-a82e-a6d9b3691cea"
+    }
+    doi = "%2F".join(doi.split("/"))
+    url = "https://api.wiley.com/onlinelibrary/tdm/v1/articles/" + doi
+    r = requests.get(url, stream=True, headers=headers)
+    with open("%s/%s.%s" % (html_dir, file_name, file_format), "wb") as html_f:
+        for chunk in r.iter_content(chunk_size=1024):
+
+            # writing one chunk at a time to html file
+            if chunk:
+                html_f.write(chunk)
+    html_f.close()
+
+
+def save_html_2(url, html_dir, file_name, file_format):
     driver = webdriver.Firefox()
     driver.get(url)
 
     html_source = driver.page_source
     # print(html_source)
 
-    html_f = open("%s/%s.html" % (html_dir, file_name), "w")
+    html_f = open("%s/%s.%s" % (html_dir, file_name, file_format), "w")
     html_f.write(html_source)
     html_f.close()
     driver.quit()
 
 
-session = HTMLSession()
-
-def save_html_3(url, html_dir, file_name):
+def save_html_3(url, html_dir, file_name, file_format):
     r = session.get(url, headers={"User-Agent": "TDMCrawler"})
     open("%s/%s.html" % (html_dir, file_name), "wb").write(r.content)
+
 
 def save_to_exel(df, file_name):
     writer = pd.ExcelWriter("%s.xlsx" % file_name, engine='xlsxwriter')
     df.to_excel(writer, sheet_name='Sheet1')
     writer.save()
+
 
 def check_saved_file(doi, saved_files_dir):
     """xxxxxx"""
@@ -97,14 +138,12 @@ def check_saved_file(doi, saved_files_dir):
                 print("Bu doi'ye ait paper daha önce kaydedilmiş! Atladık :)")
                 return True
 
+
 def dois_match(doi_1, dois):
     for doi_2 in dois:
         if str(doi_1) == str(doi_2):
             return True
 
-#def p_dois_match(doi_1, dois):
-#    pool = Pool(8)
-#    return pool.map(dois_match, (doi_1, dois))
 
 def run_get_html_lib():
     """xxxxx"""
@@ -160,6 +199,7 @@ def run_get_html_lib():
     couldnt_get_dois.close()
     list_couldnt_get_dois = pd.read_csv("%s/couldnt_get_dois.csv" %output_dir)["DOI"].to_list()
 
+
     counter = 1
     previus_ind = 0
     for i in range(len(all_doi_categories)):
@@ -185,7 +225,7 @@ def run_get_html_lib():
             print("Doi match !!!")
             continue
         try:
-            url = get_link(doi)
+            url, file_format = get_link(doi)
         except:
             couldnt_get_dois = open("%s/couldnt_get_dois.csv" %output_dir, "a")
             couldnt_get_dois.write("%s\n" %doi)
@@ -217,48 +257,47 @@ def run_get_html_lib():
                 "-", "_ot_")
             try:
                 if "pubs.acs" in url:
-                    #  continue
+                    continue
                     url = url.replace("http", "https").replace("pdf", "full")
                     html_dir = acs_dir
                     try:
-                        save_html_1(url, html_dir, file_name)
+                        save_html_1(url, html_dir, file_name, file_format="html")
                     except:
-                        save_html_3(url, html_dir, file_name)
+                        save_html_3(url, html_dir, file_name, file_format="html")
                 elif "pubs.rsc" in url:
                     url = url.replace("articlepdf", "articlehtml")
                     html_dir = rsc_dir
-                    save_html_3(url, html_dir, file_name)  # for pubs.rsc
+                    save_html_3(url, html_dir, file_name, file_format="html")  # for pubs.rsc
                 elif "elsevier" in url:
                     url = "%s&APIKey=e1ea5763a46ff62efee36df6f6a5da04" % url
                     html_dir = elsevier_dir
-                    save_html_1(url, html_dir, file_name)
+                    save_html_1(url, html_dir, file_name, file_format="xml")
                 elif "wiley" in url:
-                    url = "https://onlinelibrary.wiley.com/doi/full/" + doi
                     html_dir = wiley_dir
-                    save_html_1(url, html_dir, file_name)
+                    save_html_wiley(doi, html_dir, file_name, file_format="pdf")
                 elif "pnas." in url:
                     html_dir = science_pnas_dir
                     url = "http://dx.doi.org/" + str(doi)
-                    save_html_2(url, html_dir, file_name)
+                    save_html_2(url, html_dir, file_name, file_format)
                 elif "science" in url:
                     html_dir = science_pnas_dir
                     url = "http://dx.doi.org/" + str(doi)
-                    save_html_2(url, html_dir, file_name)
+                    save_html_2(url, html_dir, file_name, file_format)
                 elif "tandfonline" in url:
                     url = "https://www.tandfonline.com/doi/full/%s" % doi
                     html_dir = tandfonline_dir
-                    save_html_1(url, html_dir, file_name)
+                    save_html_1(url, html_dir, file_name, file_format)
                 elif "springer" in url:
                     html_dir = springer_dir
-                    save_html_1(url, html_dir, file_name)
+                    save_html_1(url, html_dir, file_name, file_format)
                 else:
                     html_dir = others_dir
-                    save_html_1(url, html_dir, file_name)
+                    save_html_1(url, html_dir, file_name, file_format)
 
             except:
                 print("%s icin html formatında kayıt yapılamadı" % file_name)
 
-            sleep_time = np.random.uniform(13, 39)
+            sleep_time = np.random.uniform(9, 19)
             time.sleep(sleep_time)
 
 run_get_html_lib()
