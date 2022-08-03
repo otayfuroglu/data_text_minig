@@ -177,39 +177,38 @@ labels =["pubs.acs",
         "pnas.",
         "science",
         "tandfonline",
-        "others"]
+        "others"
+        ]
 
-def run_check_all_dois_fromDOIs(labels, dois):
+def run_check_all_dois_fromDOIs(labels, df_dois):
 
-    n_dois = (len(dois))
-
-    keys = [".1021",
-            ".1039",
-            ".1016",
-            ".1002",
-            ".1080",
+    keys = ["10.1021",
+            "10.1039",
+            "10.1016",
+            "10.1002",
+            "10.1080",
             "pnas",
-            ".1126",
-            ".1007"]
+            "10.1126",
+            "10.1007"]
 
-    doi_categories = pd.DataFrame(columns=labels)
-    all_doi_categories = pd.DataFrame(columns=labels)
-    j = 0
-    for doi in dois:
-        #  if not check_saved_file(doi):
-        others = True
-        for i, key in enumerate(keys):
-            if key in doi:
-                all_doi_categories.loc[j, labels[i]] = doi
-                others = False
-        if others:
-            all_doi_categories.loc[j, labels[-1]] = doi
-        j += 1
-    all_doi_categories.reset_index(drop=True).to_csv("all_non_download_doi_catagories_fromDOIs_1.csv")
+    dfs = []
+    dois_list = []
+    for i, key in enumerate(keys):
+        #  df = pd.DataFrame(df_dois[df_dois["DOI"].str.contains(key)]["DOI"].to_list(), columns = [labels[i]])
+        doi_list = df_dois[df_dois["DOI"].str.contains(key)]["DOI"].to_list()
+        dois_list += doi_list
+        dfs.append(pd.DataFrame(doi_list, columns=[labels[i]]))
 
-dois = pd.read_csv("../../tdm_ml/workspace/non_disordered_doi_justone_refcode_since2019.csv")["DOI"].to_list()
-print(len(dois))
-run_check_all_dois_fromDOIs(labels, dois)
+    df_others = df_dois[~df_dois["DOI"].isin(dois_list)]
+    dfs.append(pd.DataFrame(df_others["DOI"].to_list(), columns=[labels[-1]]))
+    df_all = pd.concat(dfs, axis=1)
+    #  all_doi_categories.reset_index(drop=True).to_csv("all_non_download_doi_catagories_fromDOIs_1.csv")
+    df_all.to_csv("all_non_download_doi_catagories_fromDOIs_1.csv")
+
+
+df_dois = pd.read_csv("../../tdm_ml/workspace/non_disordered_doi_justone_refcode_since2019.csv")
+print(len(df_dois))
+run_check_all_dois_fromDOIs(labels, df_dois)
 
 
 #all_doi_categories = pd.read_csv("all_non_download_doi_catagories_fromDOIs_1.csv")
