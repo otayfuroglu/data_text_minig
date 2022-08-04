@@ -194,15 +194,18 @@ def run_get_html_lib():
     except:
         print("Bütün klasorler önceden oluşturulmuş!")
 
-    couldnt_get_dois = open("%s/couldnt_get_dois.csv" %output_dir, "w")
-    couldnt_get_dois.write("DOI\n")
-    couldnt_get_dois.close()
+        couldnt_get_dois = open("%s/couldnt_get_dois.csv" %output_dir, "w")
+        couldnt_get_dois.write("DOI\n")
+        couldnt_get_dois.close()
+
     list_couldnt_get_dois = pd.read_csv("%s/couldnt_get_dois.csv" %output_dir)["DOI"].to_list()
 
 
     counter = 1
     previus_ind = 0
-    for i in range(len(all_doi_categories)):
+    n_dois = all_doi_categories.count().sum()
+    print(n_dois)
+    for i in range(n_dois):
         #ind = i%len(publisher_list)
 
         # indeksi rastgele elde ediyor
