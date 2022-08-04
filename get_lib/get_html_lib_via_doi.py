@@ -191,12 +191,12 @@ def run_get_html_lib():
         os.mkdir(tandfonline_dir)
         os.mkdir(springer_dir)
         os.mkdir(others_dir)
-    except:
-        print("Bütün klasorler önceden oluşturulmuş!")
 
         couldnt_get_dois = open("%s/couldnt_get_dois.csv" %output_dir, "w")
         couldnt_get_dois.write("DOI\n")
         couldnt_get_dois.close()
+    except:
+        print("Bütün klasorler önceden oluşturulmuş!")
 
     list_couldnt_get_dois = pd.read_csv("%s/couldnt_get_dois.csv" %output_dir)["DOI"].to_list()
 
@@ -300,7 +300,7 @@ def run_get_html_lib():
             except:
                 print("%s icin html formatında kayıt yapılamadı" % file_name)
 
-            sleep_time = np.random.uniform(9, 19)
+            sleep_time = np.random.uniform(3, 11)
             time.sleep(sleep_time)
 
 run_get_html_lib()
