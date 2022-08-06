@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 import re
 import os
 
-
 def sa_core(html_doc, temp_dir):
     Total_DATA = []
     MOF_list = []
