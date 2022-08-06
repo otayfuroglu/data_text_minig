@@ -5,14 +5,18 @@ import os, sys
 import re
 import shutil
 
+import nltk
+nltk.download('wordnet')
+nltk.download('omw-1.4')
+
 from multiprocessing import Pool
 from itertools import product
 
 from sa_extract_p import sa_core
 from pv_extract_p import pv_core
 
-def replace(fin_name, srcStr, desStr, fout_name):
-    fin = open(fin_name, "r")
+def replace(file_name, srcStr, desStr, fout_name):
+    fin = open(file_name, "r")
     fout = open(fout_name, "w")
     txt = fin.read()
     txtout = re.sub(srcStr, desStr, txt)
@@ -68,21 +72,27 @@ def pdf2html(file_name, html_dir):
 
 def pdf2html_1(file_name, html_dir):
     """xxxxxxxxx"""
-    file_name = file_name.replace(".html", "")
     if ")" in file_name or "(" in file_name:
-        print ("Dosya ismi ( içerdiği için işleme alınmdı !!")
+        print ("Dosya ismi ( içerdiği için işleme alınmadı !!")
     else:
-        os.system("mv %s/%s.html %s/%s.pdf" % (html_dir, file_name, html_dir, file_name))
-        os.system("pdftotext %s/%s.pdf" % (html_dir, file_name))
-        os.system("mv %s/%s.txt %s/%s.html" % (html_dir, file_name, html_dir, file_name))
-        print ("Çevrildi :)")
+        if ".pdf" in file_name:
+            file_name = file_name.replace(".pdf", "")
+            os.system("pdftotext %s/%s.pdf" % (html_dir, file_name))
+            os.system("mv %s/%s.txt %s/%s.html" % (html_dir, file_name, html_dir, file_name))
+            print ("Çevrildi :)")
+        else:
+            file_name = file_name.replace(".html", "").replace(".pdf", "").replace(".xml", "")
+            os.system("mv %s/%s.html %s/%s.pdf" % (html_dir, file_name, html_dir, file_name))
+            os.system("pdftotext %s/%s.pdf" % (html_dir, file_name))
+            os.system("mv %s/%s.txt %s/%s.html" % (html_dir, file_name, html_dir, file_name))
+            print ("Çevrildi :)")
 
 def paral_by_fname(file_name, html_dir):
     """xxxxxxxxxxxxxx"""
 
     #!!!Duzelt!!!
     puplisher = html_dir.split("/")[-1]
-    file_names = [f for f in os.listdir(html_dir) if ".html" in f]
+    file_names = os.listdir(html_dir)
     i = file_names.index(file_name)
     print ("%s taranıyor...  %.2f tamamlandı." %(puplisher, 100*i/len(file_names)), end="\r")
     sys.stdout.flush()
@@ -98,60 +108,64 @@ def paral_by_fname(file_name, html_dir):
     temp_dir = "%s/temp_%s" %(work_dir, pid)
 
     doi = file_name.replace("_s_", "/").replace("_n_", ".") \
-            .replace("_p_", "(").replace("_tp_", ")").replace("_ot_", "-").replace(".html", "")
+            .replace("_p_", "(").replace("_tp_", ")").replace("_ot_", "-") \
+            .replace(".html", "").replace(".pdf", "").replace(".xml", "")
+
+    #  try:
+    url = "http://dx.doi.org/" + str(doi)
 
     try:
-        url = "http://dx.doi.org/" + str(doi)
-
-        try:
-            replace("%s/%s" % (html_dir, file_name), ">\d+\w*[</\w+>]*</a>", "></\w+></a>", "%s/temp.html" % temp_dir); \
-                    replace("%s/%s" % (html_dir, file_name), ">\d+\w*[</\w+>]*</a>", "></\w+></a>",
-                            "%s/temp2.html" % temp_dir)
-            html_doc_sa = open("%s/temp.html" %temp_dir, encoding="UTF-8")  # kaydedilen dosyadan elde edilen içerik (orjinal kodun kullandigi format)
-            html_doc_pv = open("%s/temp2.html" %temp_dir, encoding="UTF-8")
-
-        except:
-            print ("%s isimli dosya okunamadı .html fromatına çevriliyor" % file_name)
-            fl2 = open("err_non_read.log", "a")
-            fl2.write("%s\n" % file_name)
-            fl2.close()
-
-            pdf2html_1(file_name, html_dir)  # pdf ten html fromatına çevirdik
-            """NOT!!! bu şekilde text formatı üzerinden .html formatına çeverilen dosyalar üzerinde
-            sa_core ve pv_core fonk.ları verimli sonuç  alamıyor !!!. orjinal html dosyaların elde edilmesi gerekmekte !!!
-            Ayrıca yeri gelmişken, elsevier den çekilen dosyalarda .text formatında olduğundan ayn verimsizlik
-            bu dosyalar üzerinde de olabilir"""
-
-            replace("%s/%s" % (html_dir, file_name), ">\d+\w*[</\w+>]*</a>", "></\w+></a>", "%s/temp.html" % temp_dir); \
-                    replace("%s/%s" % (html_dir, file_name), ">\d+\w*[</\w+>]*</a>", "></\w+></a>",
-                            "%s/temp2.html" % temp_dir)
-            html_doc_sa = open("%s/temp.html" %temp_dir, encoding="UTF-8")  # kaydedilen dosyadan elde edilen içerik (orjinal kodun kullandigi format)
-            html_doc_pv = open("%s/temp2.html" %temp_dir, encoding="UTF-8")
-
-        try:
-            Total_DATA_sa = sa_core(html_doc_sa, temp_dir)
-            Total_DATA_pv = pv_core(html_doc_pv, temp_dir)
-            # print ("\nMOF list\n", MOF_list)
-            # print("\nTotal_DATA\n", Total_DATA)
-            # print ("\nType_total\n", Type_total)
-            # print ("\nlist total\
-            data_sa = get_dataFrame(file_name, url, doi, Total_DATA_sa)
-            data_pv = get_dataFrame(file_name, url, doi, Total_DATA_pv)
-
-        except Exception:
-            print("%s icin rirseyler ters gidiyor" % file_name)
-            fl1 = open("err_non_mining.log", "a")
-            fl1.write("%s\n" % file_name)
-            fl1.close()
-
-            data_sa = None
-            data_pv = None
+        replace("%s/%s" % (html_dir, file_name.replace(".pdf", ".html")),
+                r">\d+\\w*[</\\w+>]*</a>", r"></\\w+></a>", "%s/temp.html" % temp_dir); \
+                replace("%s/%s" % (html_dir, file_name.replace(".pdf", ".html")),
+                        r">\d+\\w*[</\\w+>]*</a>", r"></\\w+></a>",
+                        "%s/temp2.html" % temp_dir)
+        html_doc_sa = open("%s/temp.html" %temp_dir, encoding="UTF-8")  # kaydedilen dosyadan elde edilen içerik (orjinal kodun kullandigi format)
+        html_doc_pv = open("%s/temp2.html" %temp_dir, encoding="UTF-8")
 
     except:
-        print ("Genel bir hata var! Diğer dosyaya geçtik !!!")
-        fl3 = open("err_general.log", "a")
-        fl3.write("%s\n" % file_name)
-        fl3.close()
+        print ("%s isimli dosya okunamadı .html fromatına çevriliyor" % file_name)
+        fl2 = open("err_non_read.log", "a")
+        fl2.write("%s\n" % file_name)
+        fl2.close()
+
+        pdf2html_1(file_name, html_dir)  # pdf ten html fromatına çevirdik
+        """NOT!!! bu şekilde text formatı üzerinden .html formatına çeverilen dosyalar üzerinde
+        sa_core ve pv_core fonk.ları verimli sonuç  alamıyor !!!. orjinal html dosyaların elde edilmesi gerekmekte !!!
+        Ayrıca yeri gelmişken, elsevier den çekilen dosyalarda .text formatında olduğundan ayn verimsizlik
+        bu dosyalar üzerinde de olabilir"""
+
+        file_name = file_name.replace(".pdf", ".html")
+        replace("%s/%s" % (html_dir, file_name.replace(".pdf", ".html")), r">\d+\\w*[</\\w+>]*</a>", r"></\\w+></a>", "%s/temp.html" % temp_dir); \
+                replace("%s/%s" % (html_dir, file_name), r">\d+\\w*[</\\w+>]*</a>", r"></\\w+></a>",
+                        "%s/temp2.html" % temp_dir)
+        html_doc_sa = open("%s/temp.html" %temp_dir, encoding="UTF-8")  # kaydedilen dosyadan elde edilen içerik (orjinal kodun kullandigi format)
+        html_doc_pv = open("%s/temp2.html" %temp_dir, encoding="UTF-8")
+
+    try:
+        Total_DATA_sa = sa_core(html_doc_sa, temp_dir)
+        Total_DATA_pv = pv_core(html_doc_pv, temp_dir)
+        # print ("\nMOF list\n", MOF_list)
+        # print("\nTotal_DATA\n", Total_DATA)
+        # print ("\nType_total\n", Type_total)
+        # print ("\nlist total\
+        data_sa = get_dataFrame(file_name, url, doi, Total_DATA_sa)
+        data_pv = get_dataFrame(file_name, url, doi, Total_DATA_pv)
+
+    except Exception:
+        print("%s icin rirseyler ters gidiyor" % file_name)
+        fl1 = open("err_non_mining.log", "a")
+        fl1.write("%s\n" % file_name)
+        fl1.close()
+
+        data_sa = None
+        data_pv = None
+
+    #  except:
+    #      print ("Genel bir hata var! Diğer dosyaya geçtik !!!")
+    #      fl3 = open("err_general.log", "a")
+    #      fl3.write("%s\n" % file_name)
+    #      fl3.close()
 
         data_sa = None
         data_pv = None
@@ -164,14 +178,14 @@ def run_paral(n_proc):
     all_data_sa = []
     all_data_pv = []
 
-    path = "/home/modellab/workspace/omer/mof_text_minig/in_output/get_lib/all_files"
+    path = "/home/omert/Desktop/data_text_minig/works/html_lib"
 
     lib_dirs = [item for item in os.listdir(path) if not "." in item]
     done_publishers = [f.replace("_SA_extract.csv", "") for f in os.listdir(os.getcwd()) if "SA_extract.csv" in f]
 
     for lib_dir in lib_dirs:
         html_dir = ["%s/%s" % (path, lib_dir)] #starmap 'te tek bir öğe olması için list yaptık
-        file_names = [f for f in os.listdir(html_dir[0]) if ".html" in f]
+        file_names = os.listdir(html_dir[0])
 
         lib_dir_data_sa = pd.DataFrame()
         lib_dir_data_pv = pd.DataFrame()
