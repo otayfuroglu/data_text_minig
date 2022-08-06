@@ -215,8 +215,8 @@ def run_get_html_lib():
         previus_ind = ind
 
         # ençok doi elsevierden olduğu için, elsevierde doi kalmadığında çekmeyi bitirir
-        if len(elsevier_dois) == 0:
-            break
+        #  if len(elsevier_dois) == 0:
+        #      break
         if len(publisher_list[ind]) == 0:
             continue
 
