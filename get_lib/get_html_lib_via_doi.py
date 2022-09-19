@@ -14,6 +14,9 @@ from selenium import webdriver
 
 import os, sys
 import time
+import random
+import tqdm
+
 #  from multiprocessing import Pool
 
 proxies = {'http': 'http://www.someproxy.com:3128'}
@@ -149,21 +152,22 @@ def run_get_html_lib():
     """xxxxx"""
 
     BASE_DIR = "/home/omert/Desktop/data_text_minig/"
-    doi_source_file = f"{BASE_DIR}/works/all_non_download_doi_catagories_fromDOIs_1.csv"
+    doi_source_file = f"{BASE_DIR}/works/non_disordered_doi_justone_refcode_since2019.csv"
     saved_files_dir = f"{BASE_DIR}/works/html_lib"
-    all_doi_categories = pd.read_csv(doi_source_file, low_memory=False)
+    all_doi_categories = pd.read_csv(doi_source_file, low_memory=False)["DOI"].to_list()
 
-    acs_dois = all_doi_categories["pubs.acs"].dropna().to_list()
-    rsc_dois = all_doi_categories["pubs.rsc"].dropna().to_list()
-    elsevier_dois = all_doi_categories["elsevier"].dropna().to_list()
-    wiley_dois = all_doi_categories["wiley"].dropna().to_list()
-    science_dois = all_doi_categories["science"].dropna().to_list()
-    pnas_dois = all_doi_categories["pnas."].dropna().to_list()
-    tandfonline_dois = all_doi_categories["tandfonline"].dropna().to_list()
-    springer_dois = all_doi_categories["springer"].dropna().to_list()
-    others_dois = all_doi_categories["others"].dropna().to_list()
-    publisher_list = [acs_dois, rsc_dois, elsevier_dois, wiley_dois,
-                      others_dois, science_dois, pnas_dois, tandfonline_dois, springer_dois]
+    #  acs_dois = all_doi_categories["pubs.acs"].dropna().to_list()
+    #  rsc_dois = all_doi_categories["pubs.rsc"].dropna().to_list()
+    #  elsevier_dois = all_doi_categories["elsevier"].dropna().to_list()
+    #  wiley_dois = all_doi_categories["wiley"].dropna().to_list()
+    #  science_dois = all_doi_categories["science"].dropna().to_list()
+    #  pnas_dois = all_doi_categories["pnas."].dropna().to_list()
+    #  tandfonline_dois = all_doi_categories["tandfonline"].dropna().to_list()
+    #  springer_dois = all_doi_categories["springer"].dropna().to_list()
+    #  others_dois = all_doi_categories["others"].dropna().to_list()
+    #  publisher_list = [acs_dois, rsc_dois, elsevier_dois, wiley_dois,
+    #                    others_dois, science_dois, pnas_dois, tandfonline_dois, springer_dois]
+
     # workdir = os.getcwd()
     output_dir = f"{BASE_DIR}/works/html_lib"
 
@@ -201,26 +205,28 @@ def run_get_html_lib():
     list_couldnt_get_dois = pd.read_csv("%s/couldnt_get_dois.csv" %output_dir)["DOI"].to_list()
 
 
-    counter = 1
-    previus_ind = 0
-    n_dois = all_doi_categories.count().sum()
+    #  counter = 1
+    #  previus_ind = 0
+    n_dois = len(all_doi_categories)
     print(n_dois)
-    for i in range(n_dois):
+    rnd_idxs = [i for i in range(n_dois)]
+    random.shuffle(rnd_idxs)
+    for idx in tqdm.tqdm(rnd_idxs):
         #ind = i%len(publisher_list)
 
         # indeksi rastgele elde ediyor
-        ind = np.random.randint(0, len(publisher_list))
-        if ind == previus_ind:
-            ind -= 1
-        previus_ind = ind
+        #  ind = np.random.randint(0, len(publisher_list))
+        #  if ind == previus_ind:
+        #      ind -= 1
+        #  previus_ind = ind
 
         # ençok doi elsevierden olduğu için, elsevierde doi kalmadığında çekmeyi bitirir
         #  if len(elsevier_dois) == 0:
         #      break
-        if len(publisher_list[ind]) == 0:
-            continue
+        #  if len(publisher_list[ind]) == 0:
+        #      continue
 
-        doi = publisher_list[ind].pop()
+        doi = all_doi_categories[idx]
 
         if check_saved_file(doi, saved_files_dir):
             continue
@@ -238,21 +244,20 @@ def run_get_html_lib():
 
         if url:
             #print(url)
-            #print("%s yayın evinden, %d. DOI 'ye ait yayın indiriliyor ..." %(all_doi_categories.columns[ind+1],
-            #                                                                    counter), end="\r")
-            print("%s yayın evinden, %d. DOI 'ye ait yayın indiriliyor ..." %([
-                "acs_dois",
-                "rsc_dois",
-                "elsevier_dois",
-                "wiley_dois",
-                "others_dois",
-                "science_dois",
-                "pnas_dois",
-                "tandfonline_dois",
-                "springer_dois"][ind], counter), end="\r")
-            sys.stdout.flush()
+            print("%s. DOI 'ye ait yayın indiriliyor ..." %doi, end="\r")
+            #  print("%s yayın evinden, %d. DOI 'ye ait yayın indiriliyor ..." %([
+            #      "acs_dois",
+            #      "rsc_dois",
+            #      "elsevier_dois",
+            #      "wiley_dois",
+            #      "others_dois",
+            #      "science_dois",
+            #      "pnas_dois",
+            #      "tandfonline_dois",
+            #      "springer_dois"][ind], counter), end="\r")
+            #  sys.stdout.flush()
 
-            counter += 1
+            #  counter += 1
             #os.system("find %s/%s_files -type f | wc -l" % (output_dir, "1111")) + 1
 
             file_name = doi.replace("/", "_s_").replace(".", "_n_") \
