@@ -4,6 +4,7 @@ import pandas as pd
 import os, sys
 import re
 import shutil
+import tqdm
 
 import nltk
 nltk.download('wordnet')
@@ -87,15 +88,15 @@ def pdf2html_1(file_name, html_dir):
             os.system("mv %s/%s.txt %s/%s.html" % (html_dir, file_name, html_dir, file_name))
             print ("Çevrildi :)")
 
-def paral_by_fname(file_name, html_dir):
+def paral_by_fname(file_name):
     """xxxxxxxxxxxxxx"""
 
     #!!!Duzelt!!!
-    puplisher = html_dir.split("/")[-1]
-    file_names = os.listdir(html_dir)
-    i = file_names.index(file_name)
-    print ("%s taranıyor...  %.2f tamamlandı." %(puplisher, 100*i/len(file_names)), end="\r")
-    sys.stdout.flush()
+    #  puplisher = html_dir.split("/")[-1]
+    #  file_names = os.listdir(html_dir)
+    #  i = file_names.index(file_name)
+    #  print ("%s taranıyor...  %.2f tamamlandı." %(puplisher, 100*i/len(file_names)), end="\r")
+    #  sys.stdout.flush()
     #!!!!!
 
     pid = os.getpid()
@@ -172,8 +173,9 @@ def paral_by_fname(file_name, html_dir):
 
     return data_sa, data_pv
 
-def run_paral(n_proc):
-    """xxxxxxx"""
+if __name__ == "__main__":
+
+    num_processes = 4
 
     all_data_sa = []
     all_data_pv = []
@@ -184,8 +186,9 @@ def run_paral(n_proc):
     done_publishers = [f.replace("_SA_extract.csv", "") for f in os.listdir(os.getcwd()) if "SA_extract.csv" in f]
 
     for lib_dir in lib_dirs:
-        html_dir = ["%s/%s" % (path, lib_dir)] #starmap 'te tek bir öğe olması için list yaptık
-        file_names = os.listdir(html_dir[0])
+        html_dir = "%s/%s" % (path, lib_dir)
+        puplisher = html_dir.split("/")[-1]
+        file_names = os.listdir(html_dir)
 
         lib_dir_data_sa = pd.DataFrame()
         lib_dir_data_pv = pd.DataFrame()
@@ -194,14 +197,16 @@ def run_paral(n_proc):
             continue
         if lib_dir in done_publishers:
             continue
-        with Pool(processes=n_proc) as pool:
-            results = pool.starmap(paral_by_fname, product(file_names, html_dir))
-        pool.close()
 
-        for result in results:
-
+        # implementation of  multiprocessor in tqdm.
+        # Ref.https://leimao.github.io/blog/Python-tqdm-Multiprocessing/
+        pool = Pool(processes=num_processes)
+        for result in tqdm.tqdm(pool.imap_unordered(paral_by_fname, file_names),
+                                desc=f"Mining {puplisher} papers..",
+                                total=len(file_names)):
             lib_dir_data_sa = lib_dir_data_sa.append(result[0])
             lib_dir_data_pv = lib_dir_data_pv.append(result[1])
+        pool.close()
 
         lib_dir_data_sa.to_csv("%s_SA_extract.csv" %lib_dir)
         lib_dir_data_pv.to_csv("%s_PV_extract.csv" %lib_dir)
@@ -220,5 +225,4 @@ def run_paral(n_proc):
         if "temp_" in item:
             shutil.rmtree(item)
 
-run_paral(n_proc=4)
 
