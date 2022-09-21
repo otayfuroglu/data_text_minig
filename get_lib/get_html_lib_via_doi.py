@@ -152,7 +152,7 @@ def run_get_html_lib():
     """xxxxx"""
 
     BASE_DIR = "/home/omert/Desktop/data_text_minig/"
-    doi_source_file = f"{BASE_DIR}/works/non_disordered_doi_justone_refcode_since2019.csv"
+    doi_source_file = f"{BASE_DIR}/works/all_non_disordered_doi_Since2019.csv"
     saved_files_dir = f"{BASE_DIR}/works/html_lib"
     all_doi_categories = pd.read_csv(doi_source_file, low_memory=False)["DOI"].to_list()
 
